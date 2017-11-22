@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+    var map;
+    </script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@0.7.7/dist/leaflet.css" />
+    <style type="text/css">
+      html { height: 100% }
+      body { height: 100%; margin: 0px; padding: 0px }
+      .leaflet-container {
+        background: #000000;
+        outline: 0;
+      }
+    </style>
+    <script src="https://unpkg.com/leaflet@0.7.7/dist/leaflet.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+</head>
+<body>
+    <div id="map" style="width: 100%; height: 100%"></div>
+    <script type="application/javascript">
+    function getMapState() {
+        var qString = window.location.search;
+        qString = qString.substring(1, qString.length);
+
+        var cValues = new Array();
+        var separator = '&';
+
+        if (qString) {
+            var nvPairs = qString.split(separator);
+
+            for (var n = 0 ; n < nvPairs.length ; n++ ) {
+                var nvPair = nvPairs[n];
+                var nv = nvPair.split('=');
+
+                cValues[nv[0]] = nv[1];
+            }
+        }
+        return cValues;
+    }
+
+    function restoreState() {
+        var mapState = getMapState();
+        if (typeof(mapState) != 'undefined') {
+            if (mapState['lat'] && mapState['lon'] && mapState['z']) {
+                map.setView([parseFloat(mapState['lat']), parseFloat(mapState['lon'])], parseInt(mapState['z']));
+            }
+        }
+    }
+
+    var sw = new L.LatLng(-360, -360, true);
+    var ne = new L.LatLng( 360,  360, true);
+    var bounds = new L.LatLngBounds(sw, ne);
+    map = L.map("map",{
+        crs: L.CRS.EPSG4326,
+        maxBounds: bounds
+    });
+    map.setView([124,-45], 3);
+    function zeroPad(num, places) {
+      var zero = places - num.toString().length + 1;
+      return Array(+(zero > 0 && zero)).join("0") + num;
+    }
+
+    MyLayer = L.TileLayer.extend({
+        initialize: function(baseURL, options) {
+            this._baseURL = baseURL;
+            L.setOptions(this, options);
+        },
+        getTileUrl: function(tilePoint) {
+            var zoom = this._getZoomForUrl();
+            return this._baseURL + zeroPad(zoom,3) + zeroPad(tilePoint.x,3) + zeroPad(tilePoint.y,3) + ".png";
+        }
+    });
+    (new MyLayer("", {
+        maxZoom: 8,
+        noWrap: true,
+        tileSize: 512
+    })).addTo(map);
+
+    function onMapClick(e) {
+//         alert("You clicked the map at " + e.latlng + " " + map.getZoom());
+        center = e.latlng;
+        zoom = map.getZoom();
+
+        window.location = '?lat=' + center.lat.toFixed(6) + '&lon=' + center.lng.toFixed(6) + '&z=' + zoom;
+    }
+
+    map.on('click', onMapClick);
+
+    restoreState();
+
+    </script>
+</body>
+</html>

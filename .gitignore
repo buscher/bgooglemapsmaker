@@ -1,0 +1,5 @@
+build
+build_release
+*.cache
+*.kdevelop
+*.kdev4

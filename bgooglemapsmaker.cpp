@@ -67,9 +67,13 @@ bool BGooglemapsMaker::generateTilesMagick()
             }
             Magick::Image scaledImage/* = image*/;
             if (m_outputMaxZoom == i)
+            {
                 scaledImage = image;
+            }
             else
+            {
                 scaledImage = scaledImageOld;
+            }
 
 // #pragma omp critical
             {
@@ -112,10 +116,10 @@ bool BGooglemapsMaker::generateTilesMagick()
                     if (tmp != last)
                     {
 // #pragma omp critical
-                        cout << tmp*10 << "% "<< run << "/" << maxNumber << " on zoomlevel:" << i << endl;;
+                        cout << tmp*10 << "% "<< run << "/" << maxNumber << " on zoomlevel:" << i << endl;
                         last = tmp;
                     }
-                    Magick::Image tile = scaledImage;
+                    Magick::Image tile(scaledImage);
 
                     tile.crop(
                         Magick::Geometry(
@@ -126,11 +130,10 @@ bool BGooglemapsMaker::generateTilesMagick()
                         )
                     );
 
-                    std::cout << "===============width:" << tile.geometry().width() << "height:"<< tile.geometry().width() << std::endl;
-                    if ((tile.geometry().width() != m_outputTileSize) || (tile.geometry().width() != m_outputTileSize))
+                    if ((tile.columns() != m_outputTileSize) || (tile.rows() != m_outputTileSize))
                     {
                         Magick::Image newtile( Magick::Geometry(m_outputTileSize, m_outputTileSize),  Magick::Color(0, 0, 0, 1.0));
-                        newtile.floodFillTexture(Magick::Geometry(tile.geometry()), tile );
+                        newtile.floodFillTexture(Magick::Geometry(tile.columns(), tile.rows()), tile);
                         tile = newtile;
                     }
 

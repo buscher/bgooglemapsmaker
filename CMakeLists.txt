@@ -10,7 +10,7 @@ set(magick_libs "")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
-if (not USE_GRAPHICSMAGICK)
+if (NOT USE_GRAPHICSMAGICK)
     find_package(ImageMagick COMPONENTS Magick++ REQUIRED)
     include_directories(${ImageMagick_INCLUDE_DIRS})
 

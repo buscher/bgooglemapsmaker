@@ -50,7 +50,6 @@ bool BGooglemapsMaker::generateTilesMagick()
         image.read(m_fileName);
         cout << "done opening: " << m_fileName << endl;
 
-// #pragma omp parallel for
         for (unsigned int i = m_outputMaxZoom; i > 0; --i)
 //         for (int i = 1; i <= m_outputMaxZoom; ++i)
         {
@@ -75,7 +74,7 @@ bool BGooglemapsMaker::generateTilesMagick()
                 scaledImage = scaledImageOld;
             }
 
-// #pragma omp critical
+
             {
                 cout << "tiles on level:" << i << " x-count:" << widthTileCount
                      << " y-count:" << heighTileCount
@@ -108,14 +107,13 @@ bool BGooglemapsMaker::generateTilesMagick()
             {
                 std::string yTileName = fillNumber(yTile);
                 int xTile;
-// #pragma omp parallel for private(xTile, tmp) shared(run, last)
+
                 for (xTile = 0; xTile < widthTileCount; ++xTile)
                 {
                     ++run;
                     tmp = static_cast<int>(run / percent);
                     if (tmp != last)
                     {
-// #pragma omp critical
                         cout << tmp*10 << "% "<< run << "/" << maxNumber << " on zoomlevel:" << i << endl;
                         last = tmp;
                     }

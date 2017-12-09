@@ -22,15 +22,15 @@ public:
 private:
     std::string m_fileName;
 
-    const int m_outputBaseTilesCount;
     unsigned int m_outputMinZoom;
     unsigned int m_outputMaxZoom;
+
+    unsigned int m_outputImageHeight;
+    unsigned int m_outputImageWidth;
+
     const unsigned int m_outputTileSize;
     std::string m_outputPrefix;
     std::string m_outputFolder;
-
-    int m_ouputXTiles;
-    int m_ouputYTiles;
 };
 
 #endif // BGOOGLEMAPSMAKER_H

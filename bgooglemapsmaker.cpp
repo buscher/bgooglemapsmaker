@@ -12,10 +12,9 @@
 using namespace std;
 
 BGooglemapsMaker::BGooglemapsMaker(const string& fileName, const string& outputFolder, unsigned int minZoomlevel, unsigned int maxZoomlevel)
-    : m_outputBaseTilesCount(2),
-      m_outputMinZoom(minZoomlevel),
+    : m_outputMinZoom(minZoomlevel),
       m_outputMaxZoom(maxZoomlevel),
-      m_outputTileSize(256)
+      m_outputTileSize(512)
 {
     m_fileName = fileName;
     m_outputFolder = outputFolder;
@@ -44,56 +43,40 @@ bool BGooglemapsMaker::generateTilesMagick()
 //     http://www.imagemagick.org/Magick++/Image.html#Image Manipulation Methods
 
     Magick::Image image;
-    Magick::Image scaledImageOld;
     try {
         cout << "Opening image: " << m_fileName << endl;
         image.read(m_fileName);
         cout << "done opening: " << m_fileName << endl;
 
+
+        cout << "width:" << image.columns() << " height:" << image.rows() << endl;
+
+        m_outputImageHeight = image.rows();
+        m_outputImageWidth = image.columns();
+
+        const double imageRatio = static_cast<double>(image.rows()) / static_cast<double>(image.columns());
+
         for (unsigned int i = m_outputMaxZoom; i > 0; --i)
-//         for (int i = 1; i <= m_outputMaxZoom; ++i)
         {
-            int widthTileCount = std::pow(m_outputBaseTilesCount, i);
-            double scaleToWidth = m_outputTileSize * widthTileCount;
-            double scaleFactorWidth = scaleToWidth / image.columns();
-            double scaleToHeight = image.rows() * scaleFactorWidth;
-            int heighTileCount =  std::ceil(scaleToHeight / m_outputTileSize);
+            if (i < m_outputMaxZoom)
+            {
+                double scaledWidth = image.columns()/2.0;
+                int scaleToWidth = std::floor(scaledWidth);
+                int scaleToHeight = std::floor(scaledWidth*imageRatio);
 
-            if (i == 1)
-            {
-                m_ouputXTiles = m_outputBaseTilesCount * i;
-                m_ouputYTiles = heighTileCount;
-            }
-            Magick::Image scaledImage/* = image*/;
-            if (m_outputMaxZoom == i)
-            {
-                scaledImage = image;
-            }
-            else
-            {
-                scaledImage = scaledImageOld;
-            }
-
-
-            {
-                cout << "tiles on level:" << i << " x-count:" << widthTileCount
-                     << " y-count:" << heighTileCount
-                     << " image-width:" << image.columns()
-                     << " image-height:" << image.rows() << endl;
                 cout << "starting scale to: " << scaleToWidth << "x" << scaleToHeight << " on level:"<< i<< endl;
-
-    //             scaledImage.scale(
-    //                 Geometry(
-    //                     scaleToWidth, scaleToHeight
-    //                 )
-    //             );
-                scaledImage.sample(
+                image.sample(
                     Magick::Geometry(
                         scaleToWidth, scaleToHeight
                     )
                 );
                 cout << "done scaling on zoom level:" << i << endl;
             }
+
+            double widthTileDoubleCount = static_cast<double>(image.columns()) / static_cast<double>(m_outputTileSize);
+            int widthTileCount = std::ceil(widthTileDoubleCount);
+            int heighTileCount = std::ceil((static_cast<double>(image.columns())*imageRatio) / static_cast<double>(m_outputTileSize));
+            cout << "Tiles on level:" << i << " x-tiles:" << widthTileCount << " y-tiles:" << heighTileCount << endl;
 
             std::string zoomName = fillNumber(i);
 
@@ -106,18 +89,17 @@ bool BGooglemapsMaker::generateTilesMagick()
             for (int yTile = 0; yTile < heighTileCount; ++yTile)
             {
                 std::string yTileName = fillNumber(yTile);
-                int xTile;
 
-                for (xTile = 0; xTile < widthTileCount; ++xTile)
+                for (int xTile = 0; xTile < widthTileCount; ++xTile)
                 {
                     ++run;
                     tmp = static_cast<int>(run / percent);
                     if (tmp != last)
                     {
-                        cout << tmp*10 << "% "<< run << "/" << maxNumber << " on zoomlevel:" << i << endl;
+                        cout << tmp * 10 << "% "<< run << "/" << maxNumber << " on zoomlevel:" << i << endl;
                         last = tmp;
                     }
-                    Magick::Image tile(scaledImage);
+                    Magick::Image tile(image);
 
                     tile.crop(
                         Magick::Geometry(
@@ -128,10 +110,11 @@ bool BGooglemapsMaker::generateTilesMagick()
                         )
                     );
 
-                    if ((tile.columns() != m_outputTileSize) || (tile.rows() != m_outputTileSize))
+                    if (tile.columns() != m_outputTileSize || tile.rows() != m_outputTileSize)
                     {
                         Magick::Image newtile( Magick::Geometry(m_outputTileSize, m_outputTileSize),  Magick::Color(0, 0, 0, 1.0));
-                        newtile.floodFillTexture(Magick::Geometry(tile.columns(), tile.rows()), tile);
+//                         newtile.floodFillTexture(Magick::Geometry(tile.columns(), tile.rows()), tile);
+                        newtile.composite(tile, 0, 0);
                         tile = newtile;
                     }
 
@@ -141,7 +124,6 @@ bool BGooglemapsMaker::generateTilesMagick()
                     tile.write(saveName);
                 }
             }
-            scaledImageOld = scaledImage;
         }
     }
     catch(Magick::Exception &error_)
@@ -155,10 +137,24 @@ bool BGooglemapsMaker::generateTilesMagick()
 
 void BGooglemapsMaker::printParameters()
 {
-    cerr << "maxCardSizeX =" << m_ouputXTiles << endl;
-    cerr << "maxCardSizeY =" << m_ouputYTiles << endl;
+    cerr << "m_outputImageHeight =" << m_outputImageHeight << endl;
+    cerr << "m_outputImageWidth =" << m_outputImageWidth << endl;
     cerr << "constTileSize =" << m_outputTileSize << endl;
     cerr << "maxZoomLevel =" << m_outputMaxZoom << endl;
+
+//     string outFileName = m_outputFolder + "/maps-data.js";
+//
+//     FILE * outFile = fopen(outFileName.data(), "w");
+//     if (!outFile)
+//     {
+//         cerr << "WARNING: unabled to create" << m_outputFolder << "/" << "maps-data.js" << endl;
+//         exit(2);
+//     }
+//     fprintf(outFile, "var constTileSize = %d;\n", m_outputTileSize);
+//     fprintf(outFile, "var maxZoomLevel = %d;\n", m_outputMaxZoom);
+//     fprintf(outFile, "var constImageHeight = %d;\n", m_outputImageHeight);
+//     fprintf(outFile, "var constImageWidth = %d;\n", m_outputImageWidth);
+//     fclose(outFile);
 }
 
 void BGooglemapsMaker::setFileName(const string& fileName)

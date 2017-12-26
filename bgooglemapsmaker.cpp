@@ -112,7 +112,7 @@ bool BGooglemapsMaker::generateTilesMagick()
 
                     if (tile.columns() != m_outputTileSize || tile.rows() != m_outputTileSize)
                     {
-                        Magick::Image newtile( Magick::Geometry(m_outputTileSize, m_outputTileSize),  Magick::Color(0, 0, 0, 1.0));
+                        Magick::Image newtile(Magick::Geometry(m_outputTileSize, m_outputTileSize), Magick::Color(0, 0, 0, 1.0));
 //                         newtile.floodFillTexture(Magick::Geometry(tile.columns(), tile.rows()), tile);
                         newtile.composite(tile, 0, 0);
                         tile = newtile;
